@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pixel Empire — Tabellone</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rubik:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="board.css">
+</head>
+<body>
+  <main class="layout">
+    <section class="board-wrap">
+      <div id="board" class="board">
+        <div class="center">
+          <h1 class="logo">PIXEL<br>EMPIRE</h1>
+          <div id="turnLabel" class="turn-label"></div>
+          <div id="dice" class="dice"></div>
+          <div id="auction" class="auction hidden"></div>
+          <div class="decks">
+            <div class="deck glitch">⚡<span>GLITCH</span></div>
+            <div class="deck powerup">⭐<span>POWER-UP</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="side">
+      <div class="join-box" id="joinBox">
+        <img id="qr" alt="QR per entrare">
+        <div>
+          <div class="join-title">Entra col telefono</div>
+          <div id="joinUrl" class="join-url"></div>
+        </div>
+      </div>
+      <div id="players" class="players"></div>
+      <div class="bank" id="bank"></div>
+      <div id="log" class="log"></div>
+      <div class="controls">
+        <button id="fullscreenBtn" class="btn ghost">⛶ Schermo intero</button>
+        <button id="resetBtn" class="btn ghost danger">↺ Nuova partita</button>
+      </div>
+    </aside>
+  </main>
+
+  <!-- lobby -->
+  <div id="lobby" class="overlay">
+    <div class="lobby-card">
+      <h1 class="logo big">PIXEL EMPIRE</h1>
+      <p class="tag">Compra i mondi dei videogiochi. Manda gli avversari in Game Over.</p>
+      <div class="lobby-grid">
+        <img id="qrBig" class="qr-big" alt="QR per entrare">
+        <div class="lobby-right">
+          <div class="step">1. Collega il telefono alla stessa rete Wi-Fi del PC</div>
+          <div class="step">2. Inquadra il QR code o apri:</div>
+          <div id="joinUrlBig" class="join-url big"></div>
+          <div id="lobbyPlayers" class="lobby-players"></div>
+          <div class="settings">
+            <div class="settings-title">⚙ Impostazioni partita</div>
+            <div class="set-row">
+              <span>Regole</span>
+              <div class="seg" data-key="rules">
+                <button data-val="classic">Classiche</button>
+                <button data-val="simple">Semplificate</button>
+              </div>
+            </div>
+            <div id="rulesInfo" class="rules-info"></div>
+            <div class="set-row">
+              <span>Soldi iniziali</span>
+              <div class="seg" data-key="startCash">
+                <button data-val="1000">1000</button>
+                <button data-val="1500">1500</button>
+                <button data-val="2000">2000</button>
+                <button data-val="2500">2500</button>
+              </div>
+            </div>
+            <div class="set-row">
+              <span>Durata aste</span>
+              <div class="seg" data-key="auctionSeconds">
+                <button data-val="8">8 s</button>
+                <button data-val="12">12 s</button>
+                <button data-val="20">20 s</button>
+              </div>
+            </div>
+          </div>
+          <button id="startBtn" class="btn primary" disabled>▶ Avvia partita</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- carta pescata -->
+  <div id="cardPopup" class="card-popup hidden"></div>
+
+  <!-- vincitore -->
+  <div id="winner" class="overlay hidden"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/shared/common.js"></script>
+  <script src="board.js"></script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#0d0b1a">
+  <title>Pixel Empire — Controller</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rubik:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="play.css">
+</head>
+<body>
+  <!-- ingresso -->
+  <section id="joinScreen" class="screen hidden">
+    <h1 class="logo">PIXEL<br>EMPIRE</h1>
+    <label class="lbl" for="nameInput">Il tuo nome</label>
+    <input id="nameInput" maxlength="16" autocomplete="off" placeholder="Player 1">
+    <div class="lbl">Scegli la pedina</div>
+    <div id="tokenPicker" class="token-picker"></div>
+    <button id="joinBtn" class="btn primary big">ENTRA ▶</button>
+    <p id="joinNote" class="note"></p>
+  </section>
+
+  <!-- partita -->
+  <section id="gameScreen" class="screen hidden">
+    <header id="header" class="header"></header>
+    <div id="status" class="status"></div>
+    <div id="actions" class="actions"></div>
+    <nav class="tabs">
+      <button data-tab="props" class="tab active">Proprietà</button>
+      <button data-tab="trades" class="tab">Scambi <span id="tradeBadge" class="dot hidden"></span></button>
+      <button data-tab="players" class="tab">Giocatori</button>
+    </nav>
+    <div id="tab-props" class="tabpane"></div>
+    <div id="tab-trades" class="tabpane hidden"></div>
+    <div id="tab-players" class="tabpane hidden"></div>
+  </section>
+
+  <!-- composizione scambio -->
+  <div id="tradeModal" class="modal hidden">
+    <div class="sheet">
+      <h2>🤝 Nuovo scambio</h2>
+      <label class="lbl">Con chi?</label>
+      <select id="tradeWith"></select>
+      <div class="trade-cols">
+        <div>
+          <h3>Tu dai</h3>
+          <div id="tradeGive" class="pick-list"></div>
+          <label class="lbl">₵ che dai</label>
+          <input id="tradeGiveCash" type="number" min="0" inputmode="numeric" value="0">
+        </div>
+        <div>
+          <h3>Tu ricevi</h3>
+          <div id="tradeGet" class="pick-list"></div>
+          <label class="lbl">₵ che ricevi</label>
+          <input id="tradeGetCash" type="number" min="0" inputmode="numeric" value="0">
+        </div>
+      </div>
+      <p id="tradeNote" class="note"></p>
+      <div class="row">
+        <button id="tradeCancel" class="btn">Annulla</button>
+        <button id="tradeSend" class="btn primary">Proponi</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/shared/common.js"></script>
+  <script src="play.js"></script>
+</body>
+</html>
