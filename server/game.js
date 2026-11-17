@@ -83,6 +83,7 @@ class Game {
     this.turnCount = 0;
     this.auction = null;
     this.trades = [];
+    this.tradeResults = []; // esiti recenti, per avvisare chi aveva proposto
     this.debts = [];
     this.log = [];
     this.logSeq = 0;
@@ -814,14 +815,20 @@ class Game {
     return t;
   }
 
-  respondTrade(playerId, tradeId, accept) {
+  pushTradeResult(t, accepted, note = '') {
+    this.tradeResults.push({ tradeId: t.id, fromId: t.fromId, toId: t.toId, accepted, note });
+    if (this.tradeResults.length > 10) this.tradeResults.shift();
+  }
+
+  respondTrade(playerId, tradeId, accept, note = '') {
     this.requirePlaying();
     const t = this.trades.find(x => x.id === tradeId) || fail('Scambio non trovato');
     if (t.toId !== playerId) fail('Non puoi rispondere a questo scambio');
     const from = this.player(t.fromId), to = this.player(t.toId);
     if (!accept) {
       this.trades = this.trades.filter(x => x !== t);
-      this.addLog(`${to.name} rifiuta lo scambio di ${from.name}`);
+      this.addLog(`${to.name} rifiuta lo scambio di ${from.name}${note ? ` (${note})` : ''}`);
+      this.pushTradeResult(t, false, note);
       return;
     }
     this.validateSide(from, t.offer);
@@ -836,6 +843,7 @@ class Game {
     this.trades = this.trades.filter(x => x !== t);
     // gli altri scambi potrebbero non essere più validi: verranno controllati all'accettazione
     this.addLog(`🤝 Scambio concluso tra ${from.name} e ${to.name}`);
+    this.pushTradeResult(t, true);
     this.chargeMortgageInterest(to, t.offer.props);
     this.chargeMortgageInterest(from, t.request.props);
   }
@@ -872,7 +880,11 @@ class Game {
       case 'payDebt': return this.payDebt(playerId);
       case 'bankrupt': return this.bankrupt(playerId);
       case 'proposeTrade': return this.proposeTrade(playerId, a);
-      case 'respondTrade': return this.respondTrade(playerId, a.tradeId, !!a.accept);
+      case 'respondTrade': {
+        // solo i bot allegano una spiegazione al rifiuto
+        const note = this.player(playerId)?.isBot && typeof a.note === 'string' ? a.note.slice(0, 80) : '';
+        return this.respondTrade(playerId, a.tradeId, !!a.accept, note);
+      }
       case 'cancelTrade': return this.cancelTrade(playerId, a.tradeId);
       default: fail('Azione sconosciuta');
     }
@@ -886,6 +898,7 @@ class Game {
       turn: this.turn,
       auction: this.auction && { ...this.auction, remainingMs: Math.max(0, this.auction.endsAt - Date.now()) },
       trades: this.trades,
+      tradeResults: this.tradeResults,
       debts: this.debts,
       log: this.log.slice(-40),
       lastCard: this.lastCard,

@@ -108,7 +108,25 @@ test('scambi: il bot accetta un\'offerta vantaggiosa e rifiuta se completa un gr
 
   g.props[37].ownerId = a.id; g.props[39].ownerId = b.id;
   const bad = g.proposeTrade(a.id, { toId: b.id, offer: { cash: 450 }, request: { props: [39] } });
-  assert.deepEqual(decide(g, b.id), { type: 'respondTrade', tradeId: bad.id, accept: false });
+  const no = decide(g, b.id);
+  assert.equal(no.accept, false);
+  assert.match(no.note, /in più/);
+  g.act(b.id, no);
+  assert.equal(g.tradeResults.at(-1).accepted, false);
+  assert.match(g.tradeResults.at(-1).note, /in più/);
+});
+
+test('scambi: il bot accetta un prezzo alto per completarti un gruppo e gli scambi alla pari tra gruppi', () => {
+  for (const d of ['normal', 'hard']) {
+    const { g, a, b } = duel(d);
+    g.props[16].ownerId = a.id; g.props[18].ownerId = a.id; g.props[19].ownerId = b.id;
+    const t = g.proposeTrade(a.id, { toId: b.id, offer: { cash: 650 }, request: { props: [19] } });
+    assert.equal(decide(g, b.id).accept, true, `${d}: 650 per l'ultimo pezzo`);
+    g.cancelTrade(a.id, t.id);
+    g.props[21].ownerId = b.id; g.props[23].ownerId = b.id; g.props[24].ownerId = a.id;
+    g.proposeTrade(a.id, { toId: b.id, offer: { props: [24] }, request: { props: [19] } });
+    assert.equal(decide(g, b.id).accept, true, `${d}: scambio alla pari`);
+  }
 });
 
 test('il bot propone uno scambio per completare un gruppo', () => {

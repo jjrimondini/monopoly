@@ -8,7 +8,7 @@ let SQ = [], GR = {}, TOKENS = [];
 let state = null;
 let myId = null;
 let pickedToken = null;
-let lastCardId = null, wasMyTurn = false, seenTrades = new Set();
+let lastCardId = null, wasMyTurn = false, seenTrades = new Set(), seenResults = new Set(), resultsPrimed = false;
 let activeTab = 'props';
 
 const store = {
@@ -281,6 +281,16 @@ function renderTrades() {
   for (const t of pending) {
     if (!seenTrades.has(t.id)) { seenTrades.add(t.id); toast(`🤝 ${esc(pName(t.fromId))} ti propone uno scambio! Apri la scheda Scambi.`); navigator.vibrate?.(150); }
   }
+  // esito delle mie proposte (al primo stato ricevuto non mostra gli esiti vecchi)
+  for (const r of (state.tradeResults || []).filter(x => x.fromId === myId)) {
+    if (seenResults.has(r.tradeId)) continue;
+    seenResults.add(r.tradeId);
+    if (!resultsPrimed) continue;
+    toast(r.accepted
+      ? `✅ ${esc(pName(r.toId))} ha accettato il tuo scambio!`
+      : `❌ ${esc(pName(r.toId))} ha rifiutato il tuo scambio${r.note ? `: ${esc(r.note)}` : ''}.`);
+  }
+  resultsPrimed = true;
 }
 
 function renderPlayers() {

@@ -6,18 +6,18 @@ const JAIL_FINE = 50;
 
 const PROFILES = {
   easy: {
-    reserve: 40, bidFactor: 0.75, groupBonus: 0.4, blockWeight: 0.2, buildReserve: 500,
+    reserve: 40, bidFactor: 0.75, groupBonus: 0.4, blockWeight: 0.2, tradeBlock: 0.1, buildReserve: 500,
     acceptMargin: -20, proposeChance: 0.05, tradeCashFactor: 1.2, unmortgageReserve: 700,
     mortgageToComplete: false, smartJail: false, noise: 0.3,
   },
   normal: {
-    reserve: 150, bidFactor: 1.0, groupBonus: 0.8, blockWeight: 0.8, buildReserve: 200,
-    acceptMargin: 25, proposeChance: 0.35, tradeCashFactor: 1.5, unmortgageReserve: 500,
+    reserve: 150, bidFactor: 1.0, groupBonus: 0.8, blockWeight: 0.8, tradeBlock: 0.35, buildReserve: 200,
+    acceptMargin: 15, proposeChance: 0.35, tradeCashFactor: 1.5, unmortgageReserve: 500,
     mortgageToComplete: true, smartJail: false, noise: 0.12,
   },
   hard: {
-    reserve: 200, bidFactor: 1.15, groupBonus: 1.2, blockWeight: 1.4, buildReserve: 150,
-    acceptMargin: 60, proposeChance: 0.6, tradeCashFactor: 1.8, unmortgageReserve: 450,
+    reserve: 200, bidFactor: 1.15, groupBonus: 1.2, blockWeight: 1.4, tradeBlock: 0.6, buildReserve: 150,
+    acceptMargin: 40, proposeChance: 0.6, tradeCashFactor: 1.8, unmortgageReserve: 450,
     mortgageToComplete: true, smartJail: true, noise: 0.05,
   },
 };
@@ -69,12 +69,13 @@ function tradeGain(game, botId, trade, prof) {
   if (game.classic) gain -= mineGet.props.filter(i => game.props[i].mortgaged).reduce((s, i) => s + SQUARES[i].price * 0.05, 0);
 
   // pericolo: l'avversario completa nuovi gruppi grazie allo scambio
+  // (peso più basso che nelle aste: chi paga il gruppo ha comunque speso soldi per ottenerlo)
   const oBefore = ownedSet(game, otherId);
   const oAfter = new Set(oBefore);
   for (const i of mineGet.props) oAfter.delete(i);
   for (const i of mineGive.props) oAfter.add(i);
   const newGroups = completedGroups(oAfter).filter(g => !completedGroups(oBefore).includes(g));
-  for (const g of newGroups) gain -= groupTotal(SQUARES[groupMembers(g)[0]]) * prof.blockWeight;
+  for (const g of newGroups) gain -= groupTotal(SQUARES[groupMembers(g)[0]]) * prof.tradeBlock;
   return gain;
 }
 
@@ -260,7 +261,13 @@ function decideProposal(game, me, prof, mem, rng) {
 function decideTrades(game, me, prof, mem) {
   // risponde alle proposte ricevute
   const incoming = game.trades.find(t => t.toId === me.id);
-  if (incoming) return { type: 'respondTrade', tradeId: incoming.id, accept: tradeGain(game, me.id, incoming, prof) >= prof.acceptMargin };
+  if (incoming) {
+    const gain = tradeGain(game, me.id, incoming, prof);
+    if (gain >= prof.acceptMargin) return { type: 'respondTrade', tradeId: incoming.id, accept: true };
+    // spiega quanto servirebbe in più, arrotondato a 10
+    const missing = Math.max(10, Math.ceil((prof.acceptMargin - gain) / 10) * 10);
+    return { type: 'respondTrade', tradeId: incoming.id, accept: false, note: `vorrebbe circa ${missing} in più` };
+  }
   // ritira le proprie proposte rimaste senza risposta troppo a lungo
   mem.tradeSeen = mem.tradeSeen || {};
   for (const t of game.trades.filter(x => x.fromId === me.id)) {
