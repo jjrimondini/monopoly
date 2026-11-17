@@ -109,6 +109,7 @@ function renderPlayers() {
     }).join('');
     const debt = state.debts.find(d => d.playerId === p.id);
     const badges = [
+      p.isBot && `<span class="badge bot">🤖 ${DIFF[p.difficulty]}</span>`,
       p.inJail && '<span class="badge warn">💀 Game Over Zone</span>',
       p.jailCards && `<span class="badge">CONTINUA ×${p.jailCards}</span>`,
       !p.connected && !p.bankrupt && '<span class="badge warn">offline</span>',
@@ -121,6 +122,13 @@ function renderPlayers() {
       <div><div class="nm">${esc(p.name)}</div><div class="sub">${badges}</div><div class="chips">${chips}</div></div>
       <div class="cash">${money(p.cash)}</div>
     </div>`;
+  }).join('');
+  const tb = $('tradesBox');
+  tb.classList.toggle('hidden', !state.trades.length);
+  const nm = id => { const p = state.players.find(x => x.id === id); return p ? `${p.token} ${esc(p.name)}` : '?'; };
+  tb.innerHTML = '<div class="tb-title">🤝 Scambi in corso</div>' + state.trades.map(t => {
+    const what = side => [...side.props.map(i => esc(SQ[i].name)), side.cash ? money(side.cash) : '', side.jailCards ? '🎟 CONTINUA' : ''].filter(Boolean).join(', ') || 'niente';
+    return `<div class="tb-row">${nm(t.fromId)} → ${nm(t.toId)}: offre <b>${what(t.offer)}</b> per <b>${what(t.request)}</b></div>`;
   }).join('');
   $('bank').textContent = `Regole ${state.settings.rules === 'classic' ? 'classiche' : 'semplificate'} · Banca: ${state.housesLeft} livelli, ${state.hotelsLeft} boss level disponibili`;
 }
@@ -201,22 +209,37 @@ function renderLobby() {
   $('joinBox').classList.toggle('hidden', lobby);
   if (!lobby) return;
   $('lobbyPlayers').innerHTML = state.players.length
-    ? state.players.map(p => `<div class="lp" style="--c:${p.color}">${p.token} ${esc(p.name)}</div>`).join('')
+    ? state.players.map(p => `<div class="lp" style="--c:${p.color}"><span>${p.token} ${esc(p.name)}${p.isBot ? ` <span class="badge bot">🤖 ${DIFF[p.difficulty]}</span>` : ''}</span><button class="lp-x" data-remove="${p.id}" title="Rimuovi">✕</button></div>`).join('')
     : `<div class="empty">In attesa dei giocatori (${state.minPlayers}–${state.maxPlayers})…</div>`;
-  $('startBtn').disabled = state.players.length < state.minPlayers;
-  document.querySelectorAll('.seg').forEach(seg => {
+  const humans = state.players.filter(p => !p.isBot).length;
+  $('startBtn').disabled = state.players.length < state.minPlayers || !humans;
+  $('startHint').textContent = !humans ? 'Serve almeno un giocatore umano col telefono.'
+    : state.players.length < state.minPlayers ? 'Servono almeno 2 partecipanti: aggiungi un bot o un altro giocatore.' : '';
+  $('botAdd').querySelectorAll('button').forEach(b => { b.disabled = state.players.length >= state.maxPlayers; });
+  document.querySelectorAll('.seg[data-key]').forEach(seg => {
     const cur = String(state.settings[seg.dataset.key]);
     seg.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.val === cur));
   });
   $('rulesInfo').innerHTML = RULES_INFO[state.settings.rules];
 }
 
+const DIFF = { easy: 'Facile', normal: 'Normale', hard: 'Difficile' };
+
+$('botAdd').addEventListener('click', e => {
+  const b = e.target.closest('button[data-diff]');
+  if (b) socket.emit('boardAction', { type: 'addBot', difficulty: b.dataset.diff });
+});
+$('lobbyPlayers').addEventListener('click', e => {
+  const b = e.target.closest('[data-remove]');
+  if (b) socket.emit('boardAction', { type: 'removePlayer', playerId: b.dataset.remove });
+});
+
 const RULES_INFO = {
   classic: 'Regole ufficiali complete: in bancarotta verso la banca le proprietà vanno all\'asta; chi riceve proprietà ipotecate paga subito il 10% (e se le riscatta entro il turno non lo ripaga); quando i livelli scarseggiano vanno all\'asta tra chi può costruire; un Boss Level venduto senza abbastanza livelli in banca si scompone in quelli disponibili; la carta "utility più vicina" fa ritirare i dadi.',
   simple: 'Più veloci: in bancarotta verso la banca le proprietà tornano libere, le ipoteche passano di mano senza interessi, i livelli si costruiscono finché ce ne sono, un Boss Level venduto senza livelli in banca viene smontato del tutto, la carta "utility più vicina" usa il tiro appena fatto.',
 };
 
-document.querySelectorAll('.seg').forEach(seg => {
+document.querySelectorAll('.seg[data-key]').forEach(seg => {
   seg.addEventListener('click', e => {
     const b = e.target.closest('button');
     if (!b) return;

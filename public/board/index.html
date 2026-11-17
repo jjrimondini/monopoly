@@ -35,6 +35,7 @@
       </div>
       <div id="players" class="players"></div>
       <div class="bank" id="bank"></div>
+      <div id="tradesBox" class="trades-box hidden"></div>
       <div id="log" class="log"></div>
       <div class="controls">
         <button id="fullscreenBtn" class="btn ghost">⛶ Schermo intero</button>
@@ -55,6 +56,14 @@
           <div class="step">2. Inquadra il QR code o apri:</div>
           <div id="joinUrlBig" class="join-url big"></div>
           <div id="lobbyPlayers" class="lobby-players"></div>
+          <div class="bot-row">
+            <span>🤖 Aggiungi un bot</span>
+            <div class="seg" id="botAdd">
+              <button data-diff="easy">Facile</button>
+              <button data-diff="normal">Normale</button>
+              <button data-diff="hard">Difficile</button>
+            </div>
+          </div>
           <div class="settings">
             <div class="settings-title">⚙ Impostazioni partita</div>
             <div class="set-row">
@@ -82,7 +91,16 @@
                 <button data-val="20">20 s</button>
               </div>
             </div>
+            <div class="set-row">
+              <span>Velocità bot</span>
+              <div class="seg" data-key="botSpeed">
+                <button data-val="slow">Lenta</button>
+                <button data-val="normal">Normale</button>
+                <button data-val="fast">Veloce</button>
+              </div>
+            </div>
           </div>
+          <div id="startHint" class="start-hint"></div>
           <button id="startBtn" class="btn primary" disabled>▶ Avvia partita</button>
         </div>
       </div>

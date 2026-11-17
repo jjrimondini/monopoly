@@ -291,3 +291,49 @@ test('semplificate: Boss Level venduto senza livelli sufficienti viene smontato'
   assert.equal(g.props[1].houses, 0);
   assert.equal(a.cash, 1500 + 25 * 5);
 });
+
+// ---------- scambi: casi limite ----------
+
+test('scambi: la carta CONTINUA passa di mano', () => {
+  const { g, ps: [a, b] } = setup();
+  a.jailCards.push('glitch');
+  const t = g.proposeTrade(a.id, { toId: b.id, offer: { jailCards: 1 }, request: { cash: 50 } });
+  g.respondTrade(b.id, t.id, true);
+  assert.equal(a.jailCards.length, 0);
+  assert.deepEqual(b.jailCards, ['glitch']);
+  assert.equal(a.cash, 1550);
+});
+
+test('scambi: vietato se il gruppo ha costruzioni', () => {
+  const { g, ps: [a, b] } = setup();
+  g.props[1].ownerId = a.id; g.props[3].ownerId = a.id;
+  g.build(a.id, 1);
+  assert.throws(() => g.proposeTrade(a.id, { toId: b.id, offer: { props: [3] }, request: { cash: 100 } }), /costruzioni/);
+});
+
+test('scambi: all\'accettazione si ricontrolla tutto', () => {
+  const { g, ps: [a, b, c] } = setup(3);
+  g.props[5].ownerId = a.id;
+  const t1 = g.proposeTrade(a.id, { toId: b.id, offer: { props: [5] }, request: { cash: 100 } });
+  const t2 = g.proposeTrade(a.id, { toId: c.id, offer: { props: [5] }, request: { cash: 150 } });
+  g.respondTrade(c.id, t2.id, true);
+  assert.throws(() => g.respondTrade(b.id, t1.id, true), /non è di/);
+  assert.equal(g.props[5].ownerId, c.id);
+});
+
+test('scambi: solo il destinatario risponde, solo chi propone ritira', () => {
+  const { g, ps: [a, b, c] } = setup(3);
+  const t = g.proposeTrade(a.id, { toId: b.id, offer: { cash: 10 }, request: {} });
+  assert.throws(() => g.respondTrade(c.id, t.id, true), GameError);
+  assert.throws(() => g.respondTrade(a.id, t.id, true), GameError);
+  assert.throws(() => g.cancelTrade(b.id, t.id), GameError);
+  g.cancelTrade(a.id, t.id);
+  assert.equal(g.trades.length, 0);
+});
+
+test('scambi: vuoti o con sé stessi non sono ammessi', () => {
+  const { g, ps: [a, b] } = setup();
+  assert.throws(() => g.proposeTrade(a.id, { toId: b.id, offer: {}, request: {} }), /vuoto/);
+  assert.throws(() => g.proposeTrade(a.id, { toId: a.id, offer: { cash: 5 }, request: {} }), GameError);
+  assert.throws(() => g.proposeTrade(a.id, { toId: b.id, offer: { cash: 99999 }, request: {} }), GameError);
+});

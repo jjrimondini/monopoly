@@ -232,3 +232,17 @@ body {
 .win-card .crown { font-size: 90px; }
 .win-card h1 { font-family: var(--pixel); color: var(--accent); font-size: 34px; text-shadow: 4px 4px 0 var(--accent-2); }
 .win-card p { color: var(--muted); font-size: 18px; margin-bottom: 30px; }
+
+/* ---------- bot e scambi ---------- */
+.badge.bot { background: #23375e; color: #bcd6ff; }
+.bot-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-weight: 600; margin-bottom: 14px; }
+.seg button:disabled { opacity: .35; cursor: not-allowed; }
+.lobby-players .lp { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.lobby-players .lp .badge { font-size: 12px; font-weight: 600; }
+.lp-x { background: transparent; border: 0; color: var(--muted); font-size: 16px; cursor: pointer; border-radius: 6px; padding: 2px 6px; }
+.lp-x:hover { color: #ff8fa3; background: #ffffff10; }
+.start-hint { color: var(--muted); font-size: 14px; min-height: 1.2em; margin: -8px 0 10px; }
+.trades-box { background: var(--panel); border: 1px solid var(--accent-2); border-radius: 12px; padding: 10px 12px; font-size: 13px; display: flex; flex-direction: column; gap: 6px; }
+.tb-title { font-family: var(--pixel); font-size: 10px; color: var(--accent-2); }
+.tb-row b { font-weight: 600; color: var(--text); }
+.tb-row { color: var(--muted); }

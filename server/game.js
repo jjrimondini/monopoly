@@ -16,6 +16,9 @@ const SHORTAGE_HOTELS = 2;
 
 const TOKENS = ['🎮', '👾', '🕹️', '💾', '🚀', '🤖', '🐉', '⚔️'];
 const COLORS = ['#ff4d6d', '#4dd2ff', '#ffd23f', '#7cff6b', '#c77dff', '#ff9f43'];
+const BOT_NAMES = ['CPU Glitchy', 'CPU Byte', 'CPU Pixel', 'CPU Turbo', 'CPU Lag', 'CPU Combo', 'CPU Boss', 'CPU Respawn'];
+const DIFFICULTIES = ['easy', 'normal', 'hard'];
+const BOT_SPEEDS = ['slow', 'normal', 'fast'];
 
 class GameError extends Error {}
 const fail = msg => { throw new GameError(msg); };
@@ -26,10 +29,12 @@ class Game {
     this.autoTimers = opts.autoTimers ?? true;
     this.onChange = opts.onChange || (() => {});
     this.rng = opts.rng || Math.random;
+    this.allowBotsOnly = !!opts.allowBotsOnly; // solo per test/simulazioni
     this.settings = {
       rules: 'classic',
       startCash: START_CASH,
       auctionSeconds: (opts.auctionMs ?? 12000) / 1000,
+      botSpeed: 'normal',
       ...opts.settings,
     };
     this.reset();
@@ -56,6 +61,10 @@ class Game {
       if (!(v >= 5 && v <= 60)) fail('Durata asta tra 5 e 60 secondi');
       next.auctionSeconds = v;
     }
+    if (s.botSpeed !== undefined) {
+      if (!BOT_SPEEDS.includes(s.botSpeed)) fail('Velocità bot non valida');
+      next.botSpeed = s.botSpeed;
+    }
     this.settings = next;
     for (const p of this.players) p.cash = next.startCash;
   }
@@ -71,6 +80,7 @@ class Game {
     this.housesLeft = TOTAL_HOUSES;
     this.hotelsLeft = TOTAL_HOTELS;
     this.turn = null;
+    this.turnCount = 0;
     this.auction = null;
     this.trades = [];
     this.debts = [];
@@ -119,12 +129,13 @@ class Game {
   requireNoAuction() { if (this.auction) fail('C\'è un\'asta in corso'); }
 
   // ---------- lobby ----------
-  join(name, token) {
+  join(name, token, bot = null) {
     if (this.phase !== 'lobby') fail('La partita è già iniziata');
     if (this.players.length >= MAX_PLAYERS) fail(`Massimo ${MAX_PLAYERS} giocatori`);
     name = String(name || '').trim().slice(0, 16);
     if (!name) fail('Inserisci un nome');
     if (this.players.some(p => p.name.toLowerCase() === name.toLowerCase())) fail('Nome già usato');
+    if (!bot && /^cpu\b/i.test(name)) fail('I nomi "CPU…" sono riservati ai bot');
     const used = new Set(this.players.map(p => p.token));
     if (!TOKENS.includes(token) || used.has(token)) token = TOKENS.find(t => !used.has(t));
     const usedColors = new Set(this.players.map(p => p.color));
@@ -141,13 +152,23 @@ class Game {
       buildTokens: { house: 0, hotel: 0 }, // costruzioni vinte all'asta, da piazzare
       bankrupt: false,
       connected: true,
+      isBot: !!bot,
+      difficulty: bot ? bot.difficulty : null,
     };
     this.players.push(p);
     this.addLog(`${p.token} ${p.name} è entrato in partita`);
     return p;
   }
 
+  addBot(difficulty = 'normal') {
+    if (!DIFFICULTIES.includes(difficulty)) fail('Difficoltà non valida');
+    const used = new Set(this.players.map(p => p.name));
+    const name = BOT_NAMES.find(n => !used.has(n)) || fail('Nomi dei bot esauriti');
+    return this.join(name, null, { difficulty });
+  }
+
   byKey(key) { return this.players.find(p => p.key === key); }
+  host() { return this.players.find(p => !p.isBot); }
 
   leave(playerId) {
     if (this.phase !== 'lobby') fail('Durante la partita puoi solo dichiarare bancarotta');
@@ -158,7 +179,8 @@ class Game {
 
   start() {
     if (this.phase !== 'lobby') fail('Partita già iniziata');
-    if (this.players.length < MIN_PLAYERS) fail(`Servono almeno ${MIN_PLAYERS} giocatori`);
+    if (this.players.length < MIN_PLAYERS) fail(`Servono almeno ${MIN_PLAYERS} giocatori (bot compresi)`);
+    if (!this.allowBotsOnly && !this.host()) fail('Serve almeno un giocatore umano');
     this.phase = 'playing';
     for (const p of this.players) p.cash = this.settings.startCash;
     const first = Math.floor(this.rng() * this.players.length);
@@ -170,6 +192,7 @@ class Game {
     // il riscatto agevolato delle ipoteche ricevute vale solo "subito", cioè entro il turno
     for (const i of BUYABLE) delete this.props[i].interestPaid;
     for (const o of this.players) this.returnBuildTokens(o);
+    this.turnCount++;
     this.turn = { playerId: p.id, phase: 'preRoll', doubles: 0, canReroll: false, pendingBuy: null };
     this.addLog(`Turno di ${p.token} ${p.name}`);
   }
@@ -828,10 +851,10 @@ class Game {
     if (!playerId) fail('Non sei in partita');
     switch (a.type) {
       case 'start':
-        if (this.players[0]?.id !== playerId) fail('Solo il primo giocatore (o il tabellone) può avviare');
+        if (this.host()?.id !== playerId) fail('Solo il primo giocatore (o il tabellone) può avviare');
         return this.start();
       case 'settings':
-        if (this.players[0]?.id !== playerId) fail('Solo il primo giocatore (o il tabellone) può cambiare le impostazioni');
+        if (this.host()?.id !== playerId) fail('Solo il primo giocatore (o il tabellone) può cambiare le impostazioni');
         return this.setSettings(a.settings);
       case 'leave': return this.leave(playerId);
       case 'roll': return this.roll(playerId);
@@ -877,4 +900,4 @@ class Game {
   }
 }
 
-module.exports = { Game, GameError, TOKENS, START_CASH, GO_SALARY, JAIL_POS };
+module.exports = { Game, GameError, TOKENS, START_CASH, GO_SALARY, JAIL_POS, JAIL_FINE, DIFFICULTIES };

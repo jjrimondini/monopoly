@@ -2,6 +2,7 @@ const { money, esc, diceFace, rentInfo } = window.PE;
 const socket = io();
 const $ = id => document.getElementById(id);
 const KEY = 'pixelEmpireKey';
+const DIFF = { easy: 'Facile', normal: 'Normale', hard: 'Difficile' };
 
 let SQ = [], GR = {}, TOKENS = [];
 let state = null;
@@ -106,8 +107,11 @@ function renderActions() {
   if (state.phase === 'lobby') {
     status.className = 'status';
     status.textContent = `In lobby: ${state.players.length} giocatori`;
-    const host = state.players[0]?.id === myId;
+    const host = state.players.find(x => !x.isBot)?.id === myId;
+    const bots = state.players.filter(x => x.isBot);
+    if (bots.length) parts.push(`<div class="note">In partita anche: ${bots.map(b => `${b.token} ${esc(b.name)} (🤖 ${DIFF[b.difficulty]})`).join(', ')}</div>`);
     if (host) parts.push(`<button class="btn primary big" data-act="start" ${state.players.length < state.minPlayers ? 'disabled' : ''}>▶ AVVIA PARTITA</button>`);
+    if (host && state.players.length < state.minPlayers) parts.push('<div class="note">Serve almeno un altro giocatore: aggiungi un bot dal tabellone sul PC.</div>');
     else parts.push('<div class="empty">Aspetta che la partita venga avviata dal tabellone o dal primo giocatore…</div>');
     const s = state.settings;
     parts.push(`<div class="card"><b>⚙ Impostazioni</b><div class="note" style="text-align:left;margin-top:6px">
@@ -284,7 +288,7 @@ function renderPlayers() {
     const owned = Object.keys(state.props).filter(i => state.props[i].ownerId === p.id);
     return `<div class="plrow ${p.bankrupt ? 'out' : ''}" style="--c:${p.color}">
       <div class="tk">${p.token}</div>
-      <div class="nm">${esc(p.name)}${p.id === myId ? ' (tu)' : ''}<div class="sub">${owned.map(i => esc(SQ[i].name)).join(', ') || 'nessuna proprietà'}</div></div>
+      <div class="nm">${esc(p.name)}${p.id === myId ? ' (tu)' : ''}${p.isBot ? ` <span class="bot-tag">🤖 ${DIFF[p.difficulty]}</span>` : ''}<div class="sub">${owned.map(i => esc(SQ[i].name)).join(', ') || 'nessuna proprietà'}</div></div>
       <div class="cash">${p.bankrupt ? '☠️' : money(p.cash)}</div>
     </div>`;
   }).join('');
@@ -351,7 +355,7 @@ function pickList(playerId) {
 function openTradeModal() {
   const others = state.players.filter(p => p.id !== myId && !p.bankrupt);
   if (!others.length) return;
-  $('tradeWith').innerHTML = others.map(p => `<option value="${p.id}">${p.token} ${esc(p.name)}</option>`).join('');
+  $('tradeWith').innerHTML = others.map(p => `<option value="${p.id}">${p.token} ${esc(p.name)}${p.isBot ? ` (🤖 ${DIFF[p.difficulty]})` : ''}</option>`).join('');
   $('tradeGive').innerHTML = pickList(myId);
   $('tradeGet').innerHTML = pickList(others[0].id);
   $('tradeGiveCash').value = 0;

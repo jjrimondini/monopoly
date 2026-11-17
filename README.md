@@ -9,7 +9,10 @@ npm start
 ```
 1. Apri sul PC `http://localhost:3000/board/` (meglio a schermo intero).
 2. I giocatori (2–6) inquadrano il QR code con il telefono, connesso alla **stessa rete Wi-Fi** del PC.
-3. Premi **Avvia partita** sul tabellone (o dal telefono del primo giocatore).
+3. (Facoltativo) Aggiungi dei **bot** dalla lobby del tabellone: Facile, Normale o Difficile. Ogni bot si rimuove con ✕. Serve almeno un giocatore umano.
+4. Scegli le impostazioni (regole classiche/semplificate, soldi iniziali, durata aste, velocità bot) e premi **Avvia partita** sul tabellone (o dal telefono del primo giocatore umano).
+
+I bot comprano, partecipano alle aste, costruiscono, gestiscono i debiti, rispondono alle proposte di scambio e ne fanno di proprie per completare i gruppi di colore.
 
 Se i telefoni non si collegano:
 - consenti Node.js nel Firewall di Windows per le reti private;

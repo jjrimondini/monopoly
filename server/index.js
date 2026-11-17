@@ -5,6 +5,7 @@ const express = require('express');
 const { Server } = require('socket.io');
 const QRCode = require('qrcode');
 const { Game, GameError, TOKENS } = require('./game');
+const { BotManager } = require('./bots');
 const { SQUARES, GROUPS } = require('./board-data');
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -38,11 +39,13 @@ app.get('/api/info', async (_req, res) => {
 });
 
 const game = new Game({ onChange: broadcast });
+const bots = new BotManager(game, { onChange: broadcast });
 const connections = new Map(); // playerId -> numero di socket connessi
 
 function broadcast() {
-  for (const p of game.players) p.connected = (connections.get(p.id) || 0) > 0;
+  for (const p of game.players) p.connected = p.isBot || (connections.get(p.id) || 0) > 0;
   io.emit('state', game.getState());
+  bots.kick();
 }
 
 function attach(socket, player) {
@@ -89,8 +92,17 @@ io.on('connection', socket => {
   socket.on('boardAction', (a = {}) => guard(socket, () => {
     if (a.type === 'start') game.start();
     else if (a.type === 'settings') game.setSettings(a.settings);
+    else if (a.type === 'addBot') game.addBot(a.difficulty);
+    else if (a.type === 'removePlayer') {
+      game.leave(a.playerId);
+      connections.delete(a.playerId);
+      for (const s of io.sockets.sockets.values()) {
+        if (s.data.playerId === a.playerId) { s.data.playerId = null; s.emit('needJoin'); }
+      }
+    }
     else if (a.type === 'reset') {
       game.reset();
+      bots.reset();
       connections.clear();
       for (const s of io.sockets.sockets.values()) s.data.playerId = null;
       io.emit('needJoin');
